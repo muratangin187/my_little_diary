@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryScreen.dart';
 
 class MemoryBlock extends StatelessWidget {
   Memory memory;
@@ -10,47 +12,59 @@ class MemoryBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: BoxDecoration(
-          border: Border(
-              bottom: BorderSide(
-                color: Color(0xFF9A9A9A),
-              ))),
-      child: Column(
-        children: [
-          DateText(memory.date),
-          SummaryText(memory.content)
-        ],
+    return InkWell(
+      onTap: ()=>{
+        Navigator.push(
+        context,
+      MaterialPageRoute(builder: (context) => MemoryScreen(memory)))
+      },
+      child: Container(
+        padding: const EdgeInsets.all(24.0),
+        decoration: BoxDecoration(
+            border: Border(
+                bottom: BorderSide(
+                  color: Color(0xFF9A9A9A),
+                ))),
+        child: Column(
+          children: [
+            dateText(memory.date),
+            Row(
+              children: [
+                Expanded(child: summaryText(memory.content)),
+                Image(image: AssetImage("assets/images/placeholder.jpg"),height: 50,)
+              ],
+            )
+          ],
+        ),
       ),
     );
   }
 
-  Widget DateText(DateTime date) {
+  Widget dateText(DateTime date) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Padding(
-              padding: const EdgeInsets.only(right: 12),
+              padding: const EdgeInsets.only(right: 6),
               child: Text(
                 date.day.toString(),
-                style: TextStyle(
-                    color: Color(0xFFFF492B),
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold),
+                style: GoogleFonts.exo(textStyle:TextStyle(
+                    color: Color(0xFF35B62D),
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold),),
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: Text(
-                getMonthName(date.month),
-                style: TextStyle(
-                    color: Color(0xFF696969),
-                    fontSize: 32,
+                getMonthName(date.month).toUpperCase(),
+                style: GoogleFonts.exo(textStyle:TextStyle(
+                    color: Color(0xF0696969),
+                    fontSize: 24,
                     fontWeight: FontWeight.bold),
-              ),
+              ),)
             ),
             Padding(
               padding: const EdgeInsets.only(bottom: 12, right: 6),
@@ -58,7 +72,7 @@ class MemoryBlock extends StatelessWidget {
                 date.year.toString() + ",",
                 style: TextStyle(
                     color: Color(0xFF9A9A9A),
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold),
               ),
             ),
@@ -68,7 +82,7 @@ class MemoryBlock extends StatelessWidget {
                 getDayName(date.weekday),
                 style: TextStyle(
                     color: Color(0xFF9A9A9A),
-                    fontSize: 16,
+                    fontSize: 12,
                     fontWeight: FontWeight.bold),
               ),
             ),
@@ -77,15 +91,15 @@ class MemoryBlock extends StatelessWidget {
         Text(
           date.hour.toString() + ":" + date.minute.toString(),
           style: TextStyle(
-              color: Color(0xFFFF492B),
-              fontSize: 16,
+              color: Color(0xFF4AAE4E),
+              fontSize: 12,
               fontWeight: FontWeight.bold),
         )
       ],
     );
   }
 
-  Widget SummaryText(String s) {
+  Widget summaryText(String s) {
     if(s.length > 150){
       s = s.substring(0,150);
       s += "...";
@@ -94,7 +108,7 @@ class MemoryBlock extends StatelessWidget {
       s,
       style: TextStyle(
         color: Color(0xFF696969),
-        fontSize: 18,
+        fontSize: 14,
       ),
     );
   }

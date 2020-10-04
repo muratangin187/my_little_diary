@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:my_little_diary/Memory.dart';
 import 'package:my_little_diary/MemoryBlock.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(MyApp());
@@ -12,8 +13,11 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        primarySwatch: Colors.red,
+        primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
+        textTheme: GoogleFonts.robotoTextTheme(
+          Theme.of(context).textTheme
+        )
       ),
       home: MyHomePage(title: 'My Little Diary'),
       debugShowCheckedModeBanner: false,
@@ -49,7 +53,7 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(
           widget.title,
-          style: TextStyle(color: Colors.black),
+          style: GoogleFonts.macondoSwashCaps(textStyle: TextStyle(color: Colors.black, fontSize: 32, fontWeight: FontWeight.bold)),
         ),
         elevation: 0,
         backgroundColor: Color(0x00000000),

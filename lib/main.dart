@@ -1,48 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryBlock.dart';
 
 void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-        // This makes the visual density adapt to the platform that you run
-        // the app on. For desktop platforms, the controls will be smaller and
-        // closer together (more dense) than on mobile platforms.
+        primarySwatch: Colors.red,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'My Little Diary'),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -50,65 +30,53 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+  final List<Memory> memories = [
+    Memory(DateTime(2020, 6, 8, 13, 40),
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Maecenas id eros a neque luctus vehicula. Nullam blandit posuere lacus, sed tristique erat laoreet sed. Quisque ornare mauris justo, ut volutpat justo dapibus semper. Mauris ullamcorper massa vitae bibendum semper. Sed bibendum lectus efficitur sapien congue auctor. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras eleifend at sem eu varius. Duis quis tincidunt augue. Curabitur vitae magna suscipit, fringilla libero id, porta felis. Vestibulum ipsum nisl, pellentesque sit amet dapibus sit amet, ullamcorper at augue. Nam ultricies purus et turpis sollicitudin sagittis. Integer quis justo est. Nam dapibus augue in euismod blandit. Praesent sit amet ligula nec dolor blandit condimentum vel in orci. Pellentesque mollis eleifend metus, ac scelerisque mauris vulputate quis. Aenean scelerisque aliquet turpis sed luctus."),
+    Memory(DateTime(2020, 6, 8, 12, 40),
+        "Pellentesque a ipsum id mi accumsan sagittis. Donec a justo ut purus ultrices porttitor at eget lorem. Cras ex felis, lacinia maximus scelerisque placerat, fermentum quis ipsum. Etiam vitae venenatis diam, vel tempor mauris. In nec lobortis felis, nec posuere quam. Morbi eget bibendum ligula, a rutrum ante. Quisque quis porta metus. Duis placerat risus augue, vel luctus ipsum pellentesque ac. Proin lacinia tellus a justo fermentum imperdiet. Cras malesuada tellus ac mi vehicula, faucibus gravida risus fermentum. Nam efficitur et turpis ac fermentum. Aenean vitae tellus auctor, blandit tortor non, imperdiet velit. Duis iaculis sem eget felis pellentesque, vitae luctus sem tincidunt. Aliquam nunc dui, tincidunt vel suscipit ac, mattis in leo. Nunc in purus dolor."),
+    Memory(DateTime(2020, 6, 5, 13, 40),
+        "Aliquam tempus laoreet cursus. Pellentesque dapibus tincidunt diam vitae volutpat. Praesent tempor mi enim, vel rhoncus nisi porta a. Morbi maximus sed velit vitae elementum. Maecenas quam massa, tempor eget ante vel, egestas cursus nibh. Donec in viverra tortor. Nullam facilisis ante at ipsum ullamcorper congue. Ut erat tortor, accumsan at metus eget, vulputate blandit tellus. Vestibulum suscipit lobortis lobortis. Curabitur eget massa pulvinar, congue erat ac, accumsan lorem. Vestibulum lobortis id lectus eu sodales. Aliquam in purus sed nisi tristique lacinia. Duis tempus elit eu suscipit fermentum. Mauris pellentesque tempor magna et venenatis. Cras tempus dui magna, sit amet ullamcorper ante pulvinar nec."),
+    Memory(DateTime(2020, 6, 5, 13, 40),
+        "Curabitur mattis metus id dolor venenatis, a volutpat ipsum placerat. Integer arcu nunc, luctus nec orci vel, ultrices malesuada purus. Mauris laoreet massa quis convallis elementum. Sed facilisis venenatis metus a posuere. Duis a velit orci. Fusce eu eleifend diam. Etiam sed ante odio. Curabitur mauris dui, posuere eget interdum at, porttitor in lectus. Nullam id molestie dolor. Aliquam tempus leo eu pellentesque gravida. Nam aliquet neque sit amet mauris finibus mollis. Pellentesque pulvinar tellus orci, faucibus malesuada nisi pharetra finibus. Integer tempor aliquam pellentesque. Suspendisse libero dolor, molestie in mauris et, viverra dignissim nibh."),
+    Memory(DateTime(2020, 5, 8, 13, 40),
+        "Pellentesque commodo, sapien id fermentum fermentum, nulla arcu semper lectus, fringilla ultrices mi nunc at diam. Maecenas auctor semper rhoncus. Phasellus maximus, risus eget sagittis rhoncus, magna leo aliquam odio, ut tristique orci nisi vel justo. Cras aliquet sollicitudin tellus, vitae rutrum nibh aliquam quis. Nam elementum augue elit, eu convallis magna bibendum vitae. Maecenas ultrices orci id nunc bibendum posuere. Morbi nec neque in enim fringilla posuere. Donec dignissim ornare ligula sit amet cursus. Donec convallis metus ac odio iaculis, ac condimentum lorem sodales."),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+        title: Text(
+          widget.title,
+          style: TextStyle(color: Colors.black),
         ),
+        elevation: 0,
+        backgroundColor: Color(0x00000000),
+        bottom: PreferredSize(
+            child: Container(
+              color: Color(0xFF9A9A9A),
+              height: 1.0,
+            ),
+            preferredSize: Size.fromHeight(4.0)),
+        actions: [
+          Icon(
+            Icons.search,
+            color: Colors.black,
+            size: 32,
+          ),
+          SizedBox(
+            width: 20,
+          )
+        ],
       ),
+      body: ListView.builder(
+          itemCount: memories.length,
+          itemBuilder: (BuildContext context, int index) {
+            return MemoryBlock(memories[index]);
+          }),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: () => {},
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.

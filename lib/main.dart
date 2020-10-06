@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:my_little_diary/Memory.dart';
 import 'package:my_little_diary/MemoryBlock.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_little_diary/NewMemoryScreen.dart';
+import 'package:my_little_diary/test.dart';
 
 void main() {
   runApp(MyApp());
@@ -84,7 +86,10 @@ class _MyHomePageState extends State<MyHomePage> {
             return MemoryBlock(memories[index]);
           }),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => {},
+        onPressed: () => {
+          Navigator.push(context, MaterialPageRoute( builder: (context) => NewMemoryScreen()))
+          //Navigator.push(context, MaterialPageRoute( builder: (context) => Test()))
+        },
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.

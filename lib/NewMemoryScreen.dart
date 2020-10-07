@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_image_picker/multi_image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryScreen.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -27,16 +28,7 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
 
   @override
   void initState() {
-    getDb();
     super.initState();
-  }
-
-  Future<void> getDb() async {
-    database = openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
-          return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
-        }, version: 1);
   }
 
   // Define a function that inserts dogs into the database
@@ -45,7 +37,12 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
     // `conflictAlgorithm` to use in case the same dog is inserted twice.
     //
     // In this case, replace any previous data.
-    final db = await database;
+    final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
+        onCreate: (db, version) {
+          return db.execute(
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+        }, version: 1);
+
     db.insert(
       'memories',
       memory.toMapDb(),
@@ -151,6 +148,14 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
                   content: textController.text);
                 print(newMemory.toMap());
                 await insertMemory(newMemory);
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            MemoryScreen(newMemory)))
+                    .then((value) {
+                      Navigator.pop(context);
+                });
               },
               child: Text("Add new memory to diary"),
             )

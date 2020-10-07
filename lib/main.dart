@@ -50,9 +50,9 @@ class _MyHomePageState extends State<MyHomePage> {
     // Query the table for all The Dogs.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
         onCreate: (db, version) {
-          return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
-        }, version: 1);
+      return db.execute(
+          "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
+    }, version: 1);
 
     final List<Map<String, dynamic>> maps = await db.query('memories');
 
@@ -113,34 +113,41 @@ class _MyHomePageState extends State<MyHomePage> {
         ],
       ),
       body: FutureBuilder<List<Memory>>(
-        future: getMemories(),
-        builder: (context, snapshot) {
-          if(!snapshot.hasData || snapshot.connectionState != ConnectionState.done)
-            return Container(child: Text("No Data"),);
-          return ListView.builder(
-              itemCount: snapshot.data.length,
-              itemBuilder: (BuildContext context, int index) {
-                return InkWell(
-                    onTap: () => {
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => MemoryScreen(snapshot.data[index]))).then((value){
-                                setState(() {
-                                  getMemories();
-                                });
-                      })
-                    },
-                    child: MemoryBlock(snapshot.data[index]));
-              });
-        }
-      ),
+          future: getMemories(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData ||
+                snapshot.connectionState != ConnectionState.done)
+              return Container(
+                child: Text("No Data"),
+              );
+            return ListView.builder(
+                itemCount: snapshot.data.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return InkWell(
+                      onTap: () => {
+                            Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            MemoryScreen(snapshot.data[index])))
+                                .then((value) {
+                              setState(() {
+                                getMemories();
+                              });
+                            })
+                          },
+                      child: MemoryBlock(snapshot.data[index]));
+                });
+          }),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => NewMemoryScreen()))
+          Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => NewMemoryScreen()))
+              .then((value) {
+            setState(() {
+              getMemories();
+            });
+          })
           //Navigator.push(context, MaterialPageRoute( builder: (context) => Test()))
         },
         tooltip: 'Increment',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:my_little_diary/EditMemoryScreen.dart';
 import 'package:my_little_diary/Memory.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -45,36 +46,6 @@ class _MemoryScreenState extends State<MemoryScreen> {
               height: 1.0,
             ),
             preferredSize: Size.fromHeight(4.0)),
-        actions: [
-          InkWell(
-            borderRadius: BorderRadius.circular(100),
-            onTap: () => {
-              Scrollable.ensureVisible(widget.keys.last.currentContext),
-            },
-            child: Icon(
-              Icons.edit,
-              color: Color(0xFF35B62D),
-              size: 32,
-            ),
-          ),
-          SizedBox(
-            width: 20,
-          ),
-          InkWell(
-            borderRadius: BorderRadius.circular(100),
-            onTap: () => {
-              deleteMemory()
-            },
-            child: Icon(
-              Icons.delete,
-              color: Color(0xFFD6554D),
-              size: 32,
-            ),
-          ),
-          SizedBox(
-            width: 20,
-          )
-        ],
       ),
       body: SingleChildScrollView(
         controller: _controller,
@@ -91,11 +62,11 @@ class _MemoryScreenState extends State<MemoryScreen> {
                 widget.selectedKey = widget.keys.last;
               }
               result.add(
-                  contentWidget(widget.keys.last, element.content, element.date)
+                  contentWidget(widget.keys.last, element, context)
               );
             });
 
-            Future.delayed(Duration(milliseconds: 200),(){Scrollable.ensureVisible(widget.selectedKey.currentContext);});
+            Future.delayed(Duration(milliseconds: 100),(){Scrollable.ensureVisible(widget.selectedKey.currentContext);});
             return Column(
               children: result,
             );
@@ -138,7 +109,7 @@ class _MemoryScreenState extends State<MemoryScreen> {
     return todaysMemories;
   }
 
-  Future<void> deleteMemory() async {
+  Future<void> deleteMemory(id) async {
     // Get a reference to the database.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
         onCreate: (db, version) {
@@ -152,8 +123,12 @@ class _MemoryScreenState extends State<MemoryScreen> {
       // Use a `where` clause to delete a specific dog.
       where: "id = ?",
       // Pass the Dog's id as a whereArg to prevent SQL injection.
-      whereArgs: [widget.memory.id],
+      whereArgs: [id],
     );
+
+    setState(() {
+      getMemories();
+    });
   }
 
   Widget titleDate(DateTime date) {
@@ -217,7 +192,10 @@ class _MemoryScreenState extends State<MemoryScreen> {
     return months[month - 1];
   }
 
-  Widget contentWidget(Key key, String content, DateTime date) {
+  Widget contentWidget(Key key, Memory memory, BuildContext context) {
+    String content = memory.content;
+    DateTime date = memory.date;
+    int id = memory.id;
     return Container(
       key: key,
       decoration: BoxDecoration(
@@ -369,6 +347,20 @@ class _MemoryScreenState extends State<MemoryScreen> {
                     )),
               ],
             ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              OutlinedButton(onPressed: (){
+                Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            EditMemoryScreen(id:id)));
+
+              }, child: Text("Edit",)),
+              OutlinedButton(onPressed: (){deleteMemory(id);}, child: Text("Delete", style: TextStyle(color: Color(0xAFFF0000)),))
+            ],
           ),
           Padding(
             padding: const EdgeInsets.only(top: 32.0),

@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 
 class MemoryScreen extends StatefulWidget {
   Memory memory;
-  List<Memory> todays;
   int currentIndex;
   List<GlobalKey> keys;
+  GlobalKey selectedKey;
 
-  MemoryScreen(memory, todays) {
+  MemoryScreen(memory) {
     this.memory = memory;
-    this.todays = todays;
-    keys = [];
-    this.todays.asMap().forEach((index, element) {
-      keys.add(GlobalKey());
-      if(element.content == memory.content && element.date == memory.date) {
-        currentIndex = index;
-      }
-    });
   }
 
   @override
@@ -26,6 +20,7 @@ class MemoryScreen extends StatefulWidget {
 
 class _MemoryScreenState extends State<MemoryScreen> {
   ScrollController _controller;
+  Future<Database> database;
 
   @override
   void initState() {
@@ -67,7 +62,9 @@ class _MemoryScreenState extends State<MemoryScreen> {
           ),
           InkWell(
             borderRadius: BorderRadius.circular(100),
-            onTap: () => {},
+            onTap: () => {
+              deleteMemory()
+            },
             child: Icon(
               Icons.delete,
               color: Color(0xFFD6554D),
@@ -81,22 +78,82 @@ class _MemoryScreenState extends State<MemoryScreen> {
       ),
       body: SingleChildScrollView(
         controller: _controller,
-        child: Column(
-          children: getMemories(),
+        child: FutureBuilder<List<Memory>>(
+          future: getMemories(),
+          builder: (context, snapshot) {
+            if(!snapshot.hasData || snapshot.connectionState != ConnectionState.done)
+              return Container(child: Text("No Data"),);
+            widget.keys = [];
+            List<Widget> result = [];
+            snapshot.data.forEach((element) {
+              widget.keys.add(GlobalKey());
+              if(element.content == widget.memory.content && element.date == widget.memory.date) {
+                widget.selectedKey = widget.keys.last;
+              }
+              result.add(
+                  contentWidget(widget.keys.last, element.content, element.date)
+              );
+            });
+
+            Future.delayed(Duration(milliseconds: 200),(){Scrollable.ensureVisible(widget.selectedKey.currentContext);});
+            return Column(
+              children: result,
+            );
+          }
         ),
       ),
     );
   }
 
-  List<Widget> getMemories(){
-    List<Widget> result = [];
-    widget.todays.asMap().forEach((index, element) {
-      result.add(
-          contentWidget(widget.keys[index], element.content, element.date)
+  Future<List<Memory>> getMemories() async{
+    // Query the table for all The Dogs.
+    final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
+        onCreate: (db, version) {
+          return db.execute(
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+        }, version: 1);
+    final List<Map<String, dynamic>> maps = await db.query('memories');
+
+    // Convert the List<Map<String, dynamic> into a List<Dog>.
+    List<Memory> allMemories = List.generate(maps.length, (i) {
+      return Memory(
+        id: maps[i]['id'],
+        date: DateTime.fromMillisecondsSinceEpoch(maps[i]['date']),
+        content: maps[i]['content'],
       );
     });
-    Future.delayed(Duration(milliseconds: 200),(){Scrollable.ensureVisible(widget.keys[widget.currentIndex].currentContext);});
-    return result;
+
+    print(allMemories);
+
+    List<Memory> todaysMemories = allMemories.where((item) {
+      return ((item.date.difference(widget.memory.date) -
+          Duration(hours: item.date.hour) +
+          Duration(hours: item.date.hour))
+          .inHours /
+          24)
+          .round() ==
+          0;
+    }).toList();
+
+    return todaysMemories;
+  }
+
+  Future<void> deleteMemory() async {
+    // Get a reference to the database.
+    final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
+        onCreate: (db, version) {
+          return db.execute(
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+        }, version: 1);
+
+    // Remove the Dog from the Database.
+    await db.delete(
+      'memories',
+      // Use a `where` clause to delete a specific dog.
+      where: "id = ?",
+      // Pass the Dog's id as a whereArg to prevent SQL injection.
+      whereArgs: [widget.memory.id],
+    );
   }
 
   Widget titleDate(DateTime date) {

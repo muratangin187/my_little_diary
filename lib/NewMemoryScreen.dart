@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -5,18 +6,52 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_image_picker/multi_image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:my_little_diary/Memory.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 
 
 class NewMemoryScreen extends StatefulWidget {
+
   @override
   _NewMemoryScreenState createState() => _NewMemoryScreenState();
 }
 
 class _NewMemoryScreenState extends State<NewMemoryScreen> {
+  final textController = TextEditingController();
+  Future<Database> database;
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
   List<Asset> images = List<Asset>();
   String _error;
+
+  @override
+  void initState() {
+    getDb();
+    super.initState();
+  }
+
+  Future<void> getDb() async {
+    database = openDatabase(join(await getDatabasesPath(), 'memories.db'),
+        onCreate: (db, version) {
+          return db.execute(
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+        }, version: 1);
+  }
+
+  // Define a function that inserts dogs into the database
+  Future<void> insertMemory(Memory memory) async {
+    // Insert the Dog into the correct table. You might also specify the
+    // `conflictAlgorithm` to use in case the same dog is inserted twice.
+    //
+    // In this case, replace any previous data.
+    final db = await database;
+    db.insert(
+      'memories',
+      memory.toMapDb(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +128,7 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
                   expands: true,
                   minLines: null,
                   maxLines: null,
+                  controller: textController,
                   decoration: new InputDecoration(
                     border: new OutlineInputBorder(
                         borderSide: new BorderSide(color: Colors.teal)),
@@ -107,7 +143,15 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
                   )),
             ),
             OutlinedButton(
-              onPressed: () => {},
+              onPressed: () async{
+                selectedDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, selectedTime.hour, selectedTime.minute);
+                Memory newMemory = Memory(
+                  id:null,
+                  date: selectedDate,
+                  content: textController.text);
+                print(newMemory.toMap());
+                await insertMemory(newMemory);
+              },
               child: Text("Add new memory to diary"),
             )
           ],
@@ -136,6 +180,8 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
     // message was in flight, we want to discard the reply rather than calling
     // setState to update our non-existent appearance.
     if (!mounted) return;
+
+    print(resultList[0].identifier);
 
     setState(() {
       images = resultList;

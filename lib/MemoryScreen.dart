@@ -294,15 +294,20 @@ class _MemoryScreenState extends State<MemoryScreen> {
                   padding: const EdgeInsets.only(right: 8.0),
                   itemCount: snapshot.data.length,
                   itemBuilder: (BuildContext context, int index){
-                    return Container(
-                          width: 100.00,
-                          height: 100.00,
-                          decoration: new BoxDecoration(
-                            image: new DecorationImage(
-                              image: FileImage(File(snapshot.data[index].path)),
-                              fit: BoxFit.fitHeight,
-                            ),
-                          ));
+                    return InkWell(
+                      onTap: (){
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => DetailScreen(imagePath: snapshot.data[index].path,)));
+                      },
+                      child: Container(
+                            width: 100.00,
+                            height: 100.00,
+                            decoration: new BoxDecoration(
+                              image: new DecorationImage(
+                                image: FileImage(File(snapshot.data[index].path)),
+                                fit: BoxFit.fitHeight,
+                              ),
+                            )),
+                    );
                   },
                 ),
               );
@@ -357,3 +362,29 @@ class _MemoryScreenState extends State<MemoryScreen> {
       return allMemoryImages;
     }
   }
+
+class DetailScreen extends StatelessWidget {
+  final String imagePath;
+  DetailScreen({this.imagePath});
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: GestureDetector(
+        child: Container(
+          width: MediaQuery.of(context).size.width,
+          height: MediaQuery.of(context).size.height,
+          child: Hero(
+            tag: 'imageHero',
+            child: Image(image: FileImage(File(imagePath))
+            ),
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+}
+
+

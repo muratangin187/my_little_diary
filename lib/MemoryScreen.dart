@@ -130,6 +130,14 @@ class _MemoryScreenState extends State<MemoryScreen> {
       whereArgs: [id],
     );
 
+    await db.delete(
+      'memoryImages',
+      // Use a `where` clause to delete a specific dog.
+      where: "memoryId = ?",
+      // Pass the Dog's id as a whereArg to prevent SQL injection.
+      whereArgs: [id],
+    );
+
     setState(() {
       getMemories();
     });

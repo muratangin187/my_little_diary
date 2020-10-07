@@ -40,6 +40,9 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   Future<Database> database;
+  bool search = false;
+  DateTime firstDate = DateTime.now().subtract(Duration(days: 1));
+  DateTime lastDate = DateTime.now();
 
   @override
   void initState() {
@@ -57,16 +60,31 @@ class _MyHomePageState extends State<MyHomePage> {
           "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
     }, version: 1);
 
-    final List<Map<String, dynamic>> maps = await db.query('memories');
+    List<Map<String, dynamic>> maps = await db.query('memories');
 
-    // Convert the List<Map<String, dynamic> into a List<Dog>.
-    return List.generate(maps.length, (i) {
-      return Memory(
-        id: maps[i]['id'],
-        date: DateTime.fromMillisecondsSinceEpoch(maps[i]['date']),
-        content: maps[i]['content'],
-      );
-    });
+    if(search){
+      List<Memory> allMemories = List.generate(maps.length, (i) {
+        return Memory(
+          id: maps[i]['id'],
+          date: DateTime.fromMillisecondsSinceEpoch(maps[i]['date']),
+          content: maps[i]['content'],
+        );
+      });
+
+      return allMemories.where((item) {
+        firstDate = DateTime(firstDate.year, firstDate.month, firstDate.day, 0, 1);
+        lastDate = DateTime(lastDate.year, lastDate.month, lastDate.day, 23, 59);
+        return item.date.isAfter(firstDate) && item.date.isBefore(lastDate);
+      }).toList();
+    }else{
+      return List.generate(maps.length, (i) {
+        return Memory(
+          id: maps[i]['id'],
+          date: DateTime.fromMillisecondsSinceEpoch(maps[i]['date']),
+          content: maps[i]['content'],
+        );
+      });
+    }
   }
 
   Future<void> permissionInit() async {
@@ -84,11 +102,31 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  _selectDate(BuildContext context, bool first) async {
+    final DateTime picked = await showDatePicker(
+      context: context,
+      initialDate: first ? firstDate : lastDate, // Refer step 1
+      firstDate: first ? DateTime(2000) : firstDate,
+      lastDate: first ? lastDate : DateTime.now(),
+    );
+    if (picked != null)
+      setState(() {
+        if(first)
+          firstDate = picked;
+        else
+          lastDate = picked;
+      });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
+        title: search ?
+            Row(mainAxisAlignment: MainAxisAlignment.center,children: [
+              OutlinedButton(onPressed: (){_selectDate(context, true);}, child: Text("From " + firstDate.year.toString() + "-" + firstDate.month.toString() + "-" + firstDate.day.toString())),
+              OutlinedButton(onPressed: (){_selectDate(context, false);}, child: Text("To " + lastDate.year.toString() + "-" + lastDate.month.toString() + "-" + lastDate.day.toString())),])
+            : Text(
           widget.title,
           style: GoogleFonts.macondoSwashCaps(
               textStyle: TextStyle(
@@ -105,10 +143,17 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             preferredSize: Size.fromHeight(4.0)),
         actions: [
-          Icon(
-            Icons.search,
-            color: Colors.black,
-            size: 32,
+          InkWell(
+            onTap: (){
+              setState(() {
+                search = !search;
+              });
+            },
+            child: Icon(
+              search ? Icons.cancel : Icons.search,
+              color: Colors.black,
+              size: 32,
+            ),
           ),
           SizedBox(
             width: 20,

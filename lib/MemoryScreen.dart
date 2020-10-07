@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:my_little_diary/EditMemoryScreen.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryImage.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -79,9 +82,10 @@ class _MemoryScreenState extends State<MemoryScreen> {
   Future<List<Memory>> getMemories() async{
     // Query the table for all The Dogs.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
+        onCreate: (db, version) async{
+          await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
           return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
         }, version: 1);
     final List<Map<String, dynamic>> maps = await db.query('memories');
 
@@ -94,8 +98,6 @@ class _MemoryScreenState extends State<MemoryScreen> {
       );
     });
 
-    print(allMemories);
-
     List<Memory> todaysMemories = allMemories.where((item) {
       return ((item.date.difference(widget.memory.date) -
           Duration(hours: item.date.hour) +
@@ -107,14 +109,16 @@ class _MemoryScreenState extends State<MemoryScreen> {
     }).toList();
 
     return todaysMemories;
+
   }
 
   Future<void> deleteMemory(id) async {
     // Get a reference to the database.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
+        onCreate: (db, version) async{
+          await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
           return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
         }, version: 1);
 
     // Remove the Dog from the Database.
@@ -270,83 +274,31 @@ class _MemoryScreenState extends State<MemoryScreen> {
                   )),
             ],
           ),
-          Container(
-            height: 80,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(right: 8.0),
-              children: [
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-                SizedBox(
-                  width: 20,
+          FutureBuilder<List<MemoryImageObject>>(
+            future: getImagesForMemory(memory.id),
+            builder: (context, snapshot) {
+              if(!snapshot.hasData || snapshot.connectionState != ConnectionState.done)
+                return new CircularProgressIndicator(backgroundColor: Colors.black,);
+              return Container(
+                height: snapshot.data.length == 0 ? 0 : 80,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.only(right: 8.0),
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (BuildContext context, int index){
+                    return Container(
+                          width: 100.00,
+                          height: 100.00,
+                          decoration: new BoxDecoration(
+                            image: new DecorationImage(
+                              image: FileImage(File(snapshot.data[index].path)),
+                              fit: BoxFit.fitHeight,
+                            ),
+                          ));
+                  },
                 ),
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-                SizedBox(
-                  width: 20,
-                ),
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-                SizedBox(
-                  width: 20,
-                ),
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-                SizedBox(
-                  width: 20,
-                ),
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-                SizedBox(
-                  width: 20,
-                ),
-                Container(
-                    width: 100.00,
-                    height: 100.00,
-                    decoration: new BoxDecoration(
-                      image: new DecorationImage(
-                        image: ExactAssetImage('assets/images/placeholder.jpg'),
-                        fit: BoxFit.fitHeight,
-                      ),
-                    )),
-              ],
-            ),
+              );
+            }
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -375,4 +327,25 @@ class _MemoryScreenState extends State<MemoryScreen> {
       ),
     );
   }
-}
+
+  Future<List<MemoryImageObject>> getImagesForMemory(int id) async{
+      // Query the table for all The Dogs.
+      final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
+          onCreate: (db, version) async{
+            await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
+            return db.execute(
+                "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
+          }, version: 1);
+      final List<Map<String, dynamic>> maps = await db.query('memoryImages', where: "memoryId = ?" , whereArgs: [id]);
+
+      List<MemoryImageObject> allMemoryImages = List.generate(maps.length, (i) {
+        return MemoryImageObject(
+          id: maps[i]['id'],
+          memoryId: maps[i]['memoryId'],
+          path: maps[i]['path'],
+        );
+      });
+
+      return allMemoryImages;
+    }
+  }

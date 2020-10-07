@@ -1,13 +1,18 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_image_picker/multi_image_picker.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryImage.dart';
 import 'package:my_little_diary/MemoryScreen.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 
 class EditMemoryScreen extends StatefulWidget {
   final id;
@@ -26,6 +31,8 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
   List<Asset> images = List<Asset>();
   String _error;
   Memory current;
+  bool check = false;
+  List<String> newImagePaths = List<String>();
 
   @override
   void initState() {
@@ -34,14 +41,21 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
 
   Future<Memory> getMemory() async{
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-    onCreate: (db, version) {
-    return db.execute(
-    "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
-    }, version: 1);
+        onCreate: (db, version) async{
+          await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
+          return db.execute(
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
+        }, version: 1);
     final List<Map<String, dynamic>> res = await db.query("memories",
     where: "id = ?",
     whereArgs: [widget.id]);
     current = Memory(id: res[0]["id"], content: res[0]["content"], date: DateTime.fromMillisecondsSinceEpoch(res[0]["date"]));
+    if(!check){
+      selectedDate = current.date;
+      selectedTime = TimeOfDay.fromDateTime(selectedDate);
+      textController.text = current.content;
+      check = true;
+    }
     return current;
   }
 
@@ -52,9 +66,10 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
     //
     // In this case, replace any previous data.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
+        onCreate: (db, version) async{
+          await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
           return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
         }, version: 1);
     selectedDate = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, selectedTime.hour, selectedTime.minute);
     await db.update(
@@ -67,6 +82,15 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
       where: "id = ?",
       whereArgs: [widget.id]
     );
+
+    newImagePaths.forEach((element) {
+      MemoryImageObject image = MemoryImageObject(id: null, memoryId: current.id, path: element);
+      db.insert(
+        'memoryImages',
+        image.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
     return;
   }
 
@@ -84,10 +108,6 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
             return Container(
               child: Text("No Data"),
             );
-
-          selectedDate = snapshot.data.date;
-          selectedTime = TimeOfDay.fromDateTime(selectedDate);
-          textController.text = snapshot.data.content;
 
           return Container(
             padding: EdgeInsets.all(16),
@@ -151,7 +171,14 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
                     ],
                   ),
                 ),
-                Container(height:40,child: buildGridView(context), padding: EdgeInsets.only(bottom:8),),
+                FutureBuilder<List<MemoryImageObject>>(
+                  future: getImages(),
+                  builder: (context, snapshot) {
+                    if(!snapshot.hasData || snapshot.connectionState != ConnectionState.done)
+                      return new CircularProgressIndicator(backgroundColor: Colors.black,);
+                    return Container(height:40,child: buildGridView(context, snapshot.data), padding: EdgeInsets.only(bottom:8),);
+                  }
+                ),
                 Expanded(
                   child: TextField(
                       keyboardType: TextInputType.multiline,
@@ -218,7 +245,15 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    print(resultList[0].identifier);
+    var uuid = Uuid();
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    final String basepath = appDocDir.path;
+    resultList.forEach((element) async{
+      ByteData imageByte = await element.getByteData();
+      final String path = join(basepath, uuid.v1());
+      await writeToFile(imageByte, path);
+      newImagePaths.add(path);
+    });
 
     setState(() {
       images = resultList;
@@ -226,39 +261,56 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
     });
   }
 
-  Widget buildGridView(context) {
+  Future<void> writeToFile(ByteData data, String path) {
+    final buffer = data.buffer;
+    return new File(path).writeAsBytes(
+        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+  }
+
+  Widget buildGridView(context, List<MemoryImageObject> imagePaths) {
     if (images != null)
       return GridView.count(
         crossAxisCount: 1,
         scrollDirection: Axis.horizontal,
         childAspectRatio: MediaQuery.of(context).size.width /
             (MediaQuery.of(context).size.height / 1),
-        children: List.generate(images.length, (index) {
-          Asset asset = images[index];
-          return Padding(
-            padding: const EdgeInsets.only(right:16.0),
-            child: InkWell(
-              onTap: (){
-                setState(()=>{
-                  images.remove(images.firstWhere((element) => element.name == asset.name))
-                });
-                Fluttertoast.showToast(
-                    msg: "Removed an image from memory",
-                    toastLength: Toast.LENGTH_SHORT,
-                    gravity: ToastGravity.BOTTOM,
-                    timeInSecForIosWeb: 1,
-                    backgroundColor: Colors.grey,
-                    textColor: Colors.white,
-                    fontSize: 16.0
-                );
-              },
-              child: AssetThumb(
-                asset: asset,
-                width: 200,
-                height: 200,
+        children: List.generate(images.length + imagePaths.length, (index) {
+          if(index < images.length){
+            Asset asset = images[index];
+            return Padding(
+              padding: const EdgeInsets.only(right:16.0),
+              child: InkWell(
+                onTap: (){
+                  setState(()=>{
+                    images.remove(images.firstWhere((element) => element.name == asset.name))
+                  });
+                  Fluttertoast.showToast(
+                      msg: "Removed an image from memory",
+                      toastLength: Toast.LENGTH_SHORT,
+                      gravity: ToastGravity.BOTTOM,
+                      timeInSecForIosWeb: 1,
+                      backgroundColor: Colors.grey,
+                      textColor: Colors.white,
+                      fontSize: 16.0
+                  );
+                },
+                child: AssetThumb(
+                  asset: asset,
+                  width: 200,
+                  height: 200,
+                ),
               ),
-            ),
-          );
+            );
+          }else{
+            return Padding(
+              padding: const EdgeInsets.only(right:16.0),
+              child: InkWell(
+                onTap: (){
+                },
+                child: Image(image: FileImage(File(imagePaths[index - images.length].path))),
+              ),
+            );
+          }
         }),
       );
     else
@@ -282,5 +334,26 @@ class _EditMemoryScreenState extends State<EditMemoryScreen> {
       setState(() {
         selectedTime = t;
       });
+  }
+
+  Future<List<MemoryImageObject>> getImages() async{
+    // Query the table for all The Dogs.
+    final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
+    onCreate: (db, version) async{
+    await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
+    return db.execute(
+    "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
+    }, version: 1);
+    final List<Map<String, dynamic>> maps = await db.query('memoryImages', where: "memoryId = ?" , whereArgs: [widget.id]);
+
+    List<MemoryImageObject> allMemoryImages = List.generate(maps.length, (i) {
+    return MemoryImageObject(
+    id: maps[i]['id'],
+    memoryId: maps[i]['memoryId'],
+    path: maps[i]['path'],
+    );
+    });
+
+    return allMemoryImages;
   }
 }

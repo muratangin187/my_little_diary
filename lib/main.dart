@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:my_little_diary/Memory.dart';
 import 'package:my_little_diary/MemoryBlock.dart';
@@ -49,7 +51,8 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<List<Memory>> getMemories() async {
     // Query the table for all The Dogs.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
+        onCreate: (db, version) async{
+      await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
       return db.execute(
           "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
     }, version: 1);

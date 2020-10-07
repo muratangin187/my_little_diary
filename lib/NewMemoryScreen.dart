@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:multi_image_picker/multi_image_picker.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:my_little_diary/Memory.dart';
+import 'package:my_little_diary/MemoryImage.dart';
 import 'package:my_little_diary/MemoryScreen.dart';
 import 'package:path/path.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:uuid/uuid.dart';
 
 
 class NewMemoryScreen extends StatefulWidget {
@@ -24,6 +28,7 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
   DateTime selectedDate = DateTime.now();
   TimeOfDay selectedTime = TimeOfDay.now();
   List<Asset> images = List<Asset>();
+  List<String> imagePaths = List<String>();
   String _error;
 
   @override
@@ -38,16 +43,26 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
     //
     // In this case, replace any previous data.
     final db = await openDatabase(join(await getDatabasesPath(), 'memories.db'),
-        onCreate: (db, version) {
+        onCreate: (db, version) async{
+          await db.execute("CREATE TABLE memoryImages(id INTEGER PRIMARY KEY, memoryId INT, path TEXT)");
           return db.execute(
-              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, content TEXT)");
+              "CREATE TABLE memories(id INTEGER PRIMARY KEY, date INT, time INT, content TEXT)");
         }, version: 1);
 
-    db.insert(
+    int id = await db.insert(
       'memories',
       memory.toMapDb(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
+
+    imagePaths.forEach((element) {
+      MemoryImageObject image = MemoryImageObject(id: null, memoryId: id, path: element);
+      db.insert(
+        'memoryImages',
+        image.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    });
   }
 
   @override
@@ -186,12 +201,26 @@ class _NewMemoryScreenState extends State<NewMemoryScreen> {
     // setState to update our non-existent appearance.
     if (!mounted) return;
 
-    print(resultList[0].identifier);
+    var uuid = Uuid();
+    Directory appDocDir = await getApplicationDocumentsDirectory();
+    final String basepath = appDocDir.path;
+    resultList.forEach((element) async{
+      ByteData imageByte = await element.getByteData();
+      final String path = join(basepath, uuid.v1());
+      await writeToFile(imageByte, path);
+      imagePaths.add(path);
+    });
 
     setState(() {
       images = resultList;
       if (error == null) _error = 'No Error Dectected';
     });
+  }
+
+  Future<void> writeToFile(ByteData data, String path) {
+    final buffer = data.buffer;
+    return new File(path).writeAsBytes(
+        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
 
   Widget buildGridView(context) {
